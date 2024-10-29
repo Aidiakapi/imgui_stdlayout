@@ -1890,20 +1890,52 @@ struct IMGUI_API ImGuiDockNode
     ImGuiID                 SelectedTabId;              // [Leaf node only] Which of our tab/window is selected.
     ImGuiID                 WantCloseTabId;             // [Leaf node only] Set when closing a specific tab/window.
     ImGuiID                 RefViewportId;              // Reference viewport ID from visible window when HostWindow == NULL.
-    ImGuiDataAuthority      AuthorityForPos         :3;
-    ImGuiDataAuthority      AuthorityForSize        :3;
-    ImGuiDataAuthority      AuthorityForViewport    :3;
-    bool                    IsVisible               :1; // Set to false when the node is hidden (usually disabled as it has no active window)
-    bool                    IsFocused               :1;
-    bool                    IsBgDrawnThisFrame      :1;
-    bool                    HasCloseButton          :1; // Provide space for a close button (if any of the docked window has one). Note that button may be hidden on window without one.
-    bool                    HasWindowMenuButton     :1;
-    bool                    HasCentralNodeChild     :1;
-    bool                    WantCloseAll            :1; // Set when closing all tabs at once.
-    bool                    WantLockSizeOnce        :1;
-    bool                    WantMouseMove           :1; // After a node extraction we need to transition toward moving the newly created host window
-    bool                    WantHiddenTabBarUpdate  :1;
-    bool                    WantHiddenTabBarToggle  :1;
+
+    unsigned int BitFlags;
+
+    // ImGuiDataAuthority      AuthorityForPos         :3;
+    // ImGuiDataAuthority      AuthorityForSize        :3;
+    // ImGuiDataAuthority      AuthorityForViewport    :3;
+    // bool                    IsVisible               :1; // Set to false when the node is hidden (usually disabled as it has no active window)
+    // bool                    IsFocused               :1;
+    // bool                    IsBgDrawnThisFrame      :1;
+    // bool                    HasCloseButton          :1; // Provide space for a close button (if any of the docked window has one). Note that button may be hidden on window without one.
+    // bool                    HasWindowMenuButton     :1;
+    // bool                    HasCentralNodeChild     :1;
+    // bool                    WantCloseAll            :1; // Set when closing all tabs at once.
+    // bool                    WantLockSizeOnce        :1;
+    // bool                    WantMouseMove           :1; // After a node extraction we need to transition toward moving the newly created host window
+    // bool                    WantHiddenTabBarUpdate  :1;
+    // bool                    WantHiddenTabBarToggle  :1;
+
+    ImGuiDataAuthority GetAuthorityForPos() const { return ImGuiDataAuthority((BitFlags >> 0) & 7); }
+    void SetAuthorityForPos(ImGuiDataAuthority v) { BitFlags = (BitFlags & ~unsigned int(7 << 0)) | ((unsigned int(v) & 7) << 0); }
+    ImGuiDataAuthority GetAuthorityForSize() const { return ImGuiDataAuthority((BitFlags >> 3) & 7); }
+    void SetAuthorityForSize(ImGuiDataAuthority v) { BitFlags = (BitFlags & ~unsigned int(7 << 3)) | ((unsigned int(v) & 7) << 3); }
+    ImGuiDataAuthority GetAuthorityForViewport() const { return ImGuiDataAuthority((BitFlags >> 6) & 7); }
+    void SetAuthorityForViewport(ImGuiDataAuthority v) { BitFlags = (BitFlags & ~unsigned int(7 << 6)) | ((unsigned int(v) & 7) << 6); }
+    bool GetIsVisible() const { return (BitFlags >> 9) & 1; }
+    void SetIsVisible(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 9)) | (v ? unsigned int(1 << 9) : 0); }
+    bool GetIsFocused() const { return (BitFlags >> 10) & 1; }
+    void SetIsFocused(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 10)) | (v ? unsigned int(1 << 10) : 0); }
+    bool GetIsBgDrawnThisFrame() const { return (BitFlags >> 11) & 1; }
+    void SetIsBgDrawnThisFrame(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 11)) | (v ? unsigned int(1 << 11) : 0); }
+    bool GetHasCloseButton() const { return (BitFlags >> 12) & 1; }
+    void SetHasCloseButton(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 12)) | (v ? unsigned int(1 << 12) : 0); }
+    bool GetHasWindowMenuButton() const { return (BitFlags >> 13) & 1; }
+    void SetHasWindowMenuButton(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 13)) | (v ? unsigned int(1 << 13) : 0); }
+    bool GetHasCentralNodeChild() const { return (BitFlags >> 14) & 1; }
+    void SetHasCentralNodeChild(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 14)) | (v ? unsigned int(1 << 14) : 0); }
+    bool GetWantCloseAll() const { return (BitFlags >> 15) & 1; }
+    void SetWantCloseAll(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 15)) | (v ? unsigned int(1 << 15) : 0); }
+    bool GetWantLockSizeOnce() const { return (BitFlags >> 16) & 1; }
+    void SetWantLockSizeOnce(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 16)) | (v ? unsigned int(1 << 16) : 0); }
+    bool GetWantMouseMove() const { return (BitFlags >> 17) & 1; }
+    void SetWantMouseMove(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 17)) | (v ? unsigned int(1 << 17) : 0); }
+    bool GetWantHiddenTabBarUpdate() const { return (BitFlags >> 18) & 1; }
+    void SetWantHiddenTabBarUpdate(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 18)) | (v ? unsigned int(1 << 18) : 0); }
+    bool GetWantHiddenTabBarToggle() const { return (BitFlags >> 19) & 1; }
+    void SetWantHiddenTabBarToggle(bool v) { BitFlags = (BitFlags & ~unsigned int(1 << 19)) | (v ? unsigned int(1 << 19) : 0); }
 
     ImGuiDockNode(ImGuiID id);
     ~ImGuiDockNode();
@@ -2757,10 +2789,21 @@ struct IMGUI_API ImGuiWindow
     bool                    MemoryCompacted;                    // Set when window extraneous data have been garbage collected
 
     // Docking
-    bool                    DockIsActive        :1;             // When docking artifacts are actually visible. When this is set, DockNode is guaranteed to be != NULL. ~~ (DockNode != NULL) && (DockNode->Windows.Size > 1).
-    bool                    DockNodeIsVisible   :1;
-    bool                    DockTabIsVisible    :1;             // Is our window visible this frame? ~~ is the corresponding tab selected?
-    bool                    DockTabWantClose    :1;
+    ImU8                    DockBitFlags;
+    // bool                    DockIsActive        :1;             // When docking artifacts are actually visible. When this is set, DockNode is guaranteed to be != NULL. ~~ (DockNode != NULL) && (DockNode->Windows.Size > 1).
+    // bool                    DockNodeIsVisible   :1;
+    // bool                    DockTabIsVisible    :1;             // Is our window visible this frame? ~~ is the corresponding tab selected?
+    // bool                    DockTabWantClose    :1;
+
+    bool GetDockIsActive() const { return (DockBitFlags >> 0) & 1; }
+    void SetDockIsActive(bool v) { DockBitFlags = (DockBitFlags & ~ImU8(1 << 0)) | (v ? ImU8(1 << 0) : 0); }
+    bool GetDockNodeIsVisible() const { return (DockBitFlags >> 1) & 1; }
+    void SetDockNodeIsVisible(bool v) { DockBitFlags = (DockBitFlags & ~ImU8(1 << 1)) | (v ? ImU8(1 << 1) : 0); }
+    bool GetDockTabIsVisible() const { return (DockBitFlags >> 2) & 1; }
+    void SetDockTabIsVisible(bool v) { DockBitFlags = (DockBitFlags & ~ImU8(1 << 2)) | (v ? ImU8(1 << 2) : 0); }
+    bool GetDockTabWantClose() const { return (DockBitFlags >> 3) & 1; }
+    void SetDockTabWantClose(bool v) { DockBitFlags = (DockBitFlags & ~ImU8(1 << 3)) | (v ? ImU8(1 << 3) : 0); }
+
     short                   DockOrder;                          // Order of the last time the window was visible within its DockNode. This is used to reorder windows that are reappearing on the same frame. Same value between windows that were active and windows that were none are possible.
     ImGuiWindowDockStyle    DockStyle;
     ImGuiDockNode*          DockNode;                           // Which node are we docked into. Important: Prefer testing DockIsActive in many cases as this will still be set when the dock node is hidden.
@@ -2923,10 +2966,18 @@ struct ImGuiTableColumn
     ImS8                    NavLayerCurrent;                // ImGuiNavLayer in 1 byte
     ImU8                    AutoFitQueue;                   // Queue of 8 values for the next 8 frames to request auto-fit
     ImU8                    CannotSkipItemsQueue;           // Queue of 8 values for the next 8 frames to disable Clipped/SkipItem
-    ImU8                    SortDirection : 2;              // ImGuiSortDirection_Ascending or ImGuiSortDirection_Descending
-    ImU8                    SortDirectionsAvailCount : 2;   // Number of available sort directions (0 to 3)
-    ImU8                    SortDirectionsAvailMask : 4;    // Mask of available sort directions (1-bit each)
+    // ImU8                    SortDirection : 2;              // ImGuiSortDirection_Ascending or ImGuiSortDirection_Descending
+    // ImU8                    SortDirectionsAvailCount : 2;   // Number of available sort directions (0 to 3)
+    // ImU8                    SortDirectionsAvailMask : 4;    // Mask of available sort directions (1-bit each)
     ImU8                    SortDirectionsAvailList;        // Ordered list of available sort directions (2-bits each, total 8-bits)
+
+    ImU8 BitFields;
+    ImU8 GetSortDirection() const { return (BitFields >> 0) & 0x3; }
+    void SetSortDirection(ImU8 v) { BitFields = (BitFields & ~ImU8(0x3 << 0)) | ImU8((v & 0x3) << 0); }
+    ImU8 GetSortDirectionsAvailCount() const { return (BitFields >> 2) & 0x3; }
+    void SetSortDirectionsAvailCount(ImU8 v) { BitFields = (BitFields & ~ImU8(0x3 << 2)) | ImU8((v & 0x3) << 2); }
+    ImU8 GetSortDirectionsAvailMask() const { return (BitFields >> 4) & 0xf; }
+    void SetSortDirectionsAvailMask(ImU8 v) { BitFields = (BitFields & ~ImU8(0xf << 4)) | ImU8((v & 0xf) << 4); }
 
     ImGuiTableColumn()
     {
@@ -2936,7 +2987,7 @@ struct ImGuiTableColumn
         DisplayOrder = IndexWithinEnabledSet = -1;
         PrevEnabledColumn = NextEnabledColumn = -1;
         SortOrder = -1;
-        SortDirection = ImGuiSortDirection_None;
+        SetSortDirection(ImGuiSortDirection_None);
         DrawChannelCurrent = DrawChannelFrozen = DrawChannelUnfrozen = (ImU8)-1;
     }
 };
@@ -3129,9 +3180,17 @@ struct ImGuiTableColumnSettings
     ImGuiTableColumnIdx     Index;
     ImGuiTableColumnIdx     DisplayOrder;
     ImGuiTableColumnIdx     SortOrder;
-    ImU8                    SortDirection : 2;
-    ImU8                    IsEnabled : 1; // "Visible" in ini file
-    ImU8                    IsStretch : 1;
+    // ImU8                    SortDirection : 2;
+    // ImU8                    IsEnabled : 1; // "Visible" in ini file
+    // ImU8                    IsStretch : 1;
+
+    ImU8 BitFields;
+    ImU8 GetSortDirection() const { return (BitFields >> 0) & 0x3; }
+    void SetSortDirection(ImU8 v) { BitFields = (BitFields & ~ImU8(0x3 << 0)) | ImU8((v & 0x3) << 0); }
+    bool GetIsEnabled() const { return (BitFields >> 2) & 1; }
+    void SetIsEnabled(bool v) { BitFields = (BitFields & ~ImU8(1 << 2)) | (v ? ImU8(1 << 2) : 0); }
+    bool GetIsStretch() const { return (BitFields >> 3) & 1; }
+    void SetIsStretch(bool v) { BitFields = (BitFields & ~ImU8(1 << 3)) | (v ? ImU8(1 << 3) : 0); }
 
     ImGuiTableColumnSettings()
     {
@@ -3139,9 +3198,10 @@ struct ImGuiTableColumnSettings
         UserID = 0;
         Index = -1;
         DisplayOrder = SortOrder = -1;
-        SortDirection = ImGuiSortDirection_None;
-        IsEnabled = 1;
-        IsStretch = 0;
+        BitFields = 0;
+        SetSortDirection(ImGuiSortDirection_None);
+        SetIsEnabled(true);
+        SetIsStretch(false);
     }
 };
 

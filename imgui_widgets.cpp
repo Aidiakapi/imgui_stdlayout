@@ -10287,12 +10287,12 @@ void    ImGui::SetTabItemClosed(const char* label)
     }
     else if (ImGuiWindow* window = FindWindowByName(label))
     {
-        if (window->DockIsActive)
+        if (window->GetDockIsActive())
             if (ImGuiDockNode* node = window->DockNode)
             {
                 ImGuiID tab_id = TabBarCalcTabID(node->TabBar, label, window);
                 TabBarRemoveTab(node->TabBar, tab_id);
-                window->DockTabWantClose = true;
+                window->SetDockTabWantClose(true);
             }
     }
 }

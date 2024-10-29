@@ -3658,7 +3658,7 @@ void ImFont::BuildLookupTable()
 {
     int max_codepoint = 0;
     for (int i = 0; i != Glyphs.Size; i++)
-        max_codepoint = ImMax(max_codepoint, (int)Glyphs[i].Codepoint);
+        max_codepoint = ImMax(max_codepoint, (int)Glyphs[i].GetCodepoint());
 
     // Build lookup table
     IM_ASSERT(Glyphs.Size > 0 && "Font has not loaded glyph!");
@@ -3670,7 +3670,7 @@ void ImFont::BuildLookupTable()
     GrowIndex(max_codepoint + 1);
     for (int i = 0; i < Glyphs.Size; i++)
     {
-        int codepoint = (int)Glyphs[i].Codepoint;
+        int codepoint = (int)Glyphs[i].GetCodepoint();
         IndexAdvanceX[codepoint] = Glyphs[i].AdvanceX;
         IndexLookup[codepoint] = (ImWchar)i;
 
@@ -3683,14 +3683,14 @@ void ImFont::BuildLookupTable()
     // FIXME: Needs proper TAB handling but it needs to be contextualized (or we could arbitrary say that each string starts at "column 0" ?)
     if (FindGlyph((ImWchar)' '))
     {
-        if (Glyphs.back().Codepoint != '\t')   // So we can call this function multiple times (FIXME: Flaky)
+        if (Glyphs.back().GetCodepoint() != '\t')   // So we can call this function multiple times (FIXME: Flaky)
             Glyphs.resize(Glyphs.Size + 1);
         ImFontGlyph& tab_glyph = Glyphs.back();
         tab_glyph = *FindGlyph((ImWchar)' ');
-        tab_glyph.Codepoint = '\t';
+        tab_glyph.SetCodepoint('\t');
         tab_glyph.AdvanceX *= IM_TABSIZE;
-        IndexAdvanceX[(int)tab_glyph.Codepoint] = (float)tab_glyph.AdvanceX;
-        IndexLookup[(int)tab_glyph.Codepoint] = (ImWchar)(Glyphs.Size - 1);
+        IndexAdvanceX[(int)tab_glyph.GetCodepoint()] = (float)tab_glyph.AdvanceX;
+        IndexLookup[(int)tab_glyph.GetCodepoint()] = (ImWchar)(Glyphs.Size - 1);
     }
 
     // Mark special glyphs as not visible (note that AddGlyph already mark as non-visible glyphs with zero-size polygons)
@@ -3707,7 +3707,7 @@ void ImFont::BuildLookupTable()
         if (FallbackGlyph == NULL)
         {
             FallbackGlyph = &Glyphs.back();
-            FallbackChar = (ImWchar)FallbackGlyph->Codepoint;
+            FallbackChar = (ImWchar)FallbackGlyph->GetCodepoint();
         }
     }
     FallbackAdvanceX = FallbackGlyph->AdvanceX;
@@ -3754,7 +3754,7 @@ bool ImFont::IsGlyphRangeUnused(unsigned int c_begin, unsigned int c_last)
 void ImFont::SetGlyphVisible(ImWchar c, bool visible)
 {
     if (ImFontGlyph* glyph = (ImFontGlyph*)(void*)FindGlyph((ImWchar)c))
-        glyph->Visible = visible ? 1 : 0;
+        glyph->SetVisible(visible);
 }
 
 void ImFont::GrowIndex(int new_size)
@@ -3793,9 +3793,9 @@ void ImFont::AddGlyph(const ImFontConfig* cfg, ImWchar codepoint, float x0, floa
 
     Glyphs.resize(Glyphs.Size + 1);
     ImFontGlyph& glyph = Glyphs.back();
-    glyph.Codepoint = (unsigned int)codepoint;
-    glyph.Visible = (x0 != x1) && (y0 != y1);
-    glyph.Colored = false;
+    glyph.SetCodepoint(codepoint);
+    glyph.SetVisible((x0 != x1) && (y0 != y1));
+    glyph.SetColored(false);
     glyph.X0 = x0;
     glyph.Y0 = y0;
     glyph.X1 = x1;
@@ -4041,9 +4041,9 @@ ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, cons
 void ImFont::RenderChar(ImDrawList* draw_list, float size, const ImVec2& pos, ImU32 col, ImWchar c) const
 {
     const ImFontGlyph* glyph = FindGlyph(c);
-    if (!glyph || !glyph->Visible)
+    if (!glyph || !glyph->GetVisible())
         return;
-    if (glyph->Colored)
+    if (glyph->GetColored())
         col |= ~IM_COL32_A_MASK;
     float scale = (size >= 0.0f) ? (size / FontSize) : 1.0f;
     float x = IM_TRUNC(pos.x);
@@ -4165,7 +4165,7 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
             continue;
 
         float char_width = glyph->AdvanceX * scale;
-        if (glyph->Visible)
+        if (glyph->GetVisible())
         {
             // We don't do a second finer clipping test on the Y axis as we've already skipped anything before clip_rect.y and exit once we pass clip_rect.w
             float x1 = x + glyph->X0 * scale;
@@ -4211,7 +4211,7 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
                 }
 
                 // Support for untinted glyphs
-                ImU32 glyph_col = glyph->Colored ? col_untinted : col;
+                ImU32 glyph_col = glyph->GetColored() ? col_untinted : col;
 
                 // We are NOT calling PrimRectUV() here because non-inlined causes too much overhead in a debug builds. Inlined here:
                 {
